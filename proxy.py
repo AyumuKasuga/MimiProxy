@@ -9,6 +9,8 @@ class HttpClient(asyncio.Protocol):
     def data_received(self, data):
         self.server_transport.write(data)
 
+    def connection_lost(self, exc):
+        self.server_transport.close()
 
 class ProxyServer(asyncio.Protocol):
 
