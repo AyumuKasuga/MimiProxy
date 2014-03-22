@@ -1,38 +1,45 @@
 import asyncio
+from struct import unpack, pack
 
 
-class HttpClient(asyncio.Protocol):
+class Client(asyncio.Protocol):
+    pass
 
-    def connection_made(self, transport):
-        self.transport = transport
-
-    def data_received(self, data):
-        self.server_transport.write(data)
-
-    def connection_lost(self, exc):
-        self.server_transport.close()
 
 class ProxyServer(asyncio.Protocol):
 
-    @asyncio.coroutine
-    def parse_request(self, data):
-        pos = data.find(b'\r\n\r\n')
-        src_headers = data[:pos]
-        headers = src_headers.split(b'\r\n')
-        method, url, http_version = headers[0].split(b' ')
-        header = dict((x[:x.find(b':')].lower(), x[x.find(b':')+1:].strip()) for x in headers[1:])
-        print(header[b'host'])
-        protocol, client = yield from asyncio.get_event_loop().create_connection(HttpClient, header[b'host'], 80)
-        client.server_transport = self.transport
-        client.transport.write(data)
+    STAGE_HELLO = 1
+    STAGE_AUTH = 2
+    STAGE_WORK = 3
+
+    CMD_CONNECT = 1
+    CMD_BIND = 2
+    CMD_UDP_ASSOCIATE = 3
+
+    ATYP_IPV4 = 1
+    ATYP_DOMAIN = 3
+    ATYP_IPV6 = 4
 
     def connection_made(self, transport):
+        self.stage = self.STAGE_HELLO
         self.transport = transport
 
-
     def data_received(self, data):
-        asyncio.Task(self.parse_request(data))
-
+        if self.stage == self.STAGE_HELLO:
+            print('hello')
+            ver, nmethods = unpack(b'bb', data[:2])
+            methods = unpack(nmethods * b'b', data[2:])
+            self.transport.write(pack(b'bb', 5, 0))
+            self.stage = self.STAGE_WORK
+        elif self.stage == self.STAGE_AUTH:
+            print('auth')
+        elif self.stage == self.STAGE_WORK:
+            print('work')
+            ver, cmd, rsv, atyp = unpack(b'bbbb', data[:4])
+            print(ver, cmd, rsv, atyp)
+            print(unpack(b'!H', data[-2:]))
+            if atyp == self.ATYP_IPV4:
+                print(unpack(b'BBBB', data[4:8]))
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
