@@ -11,6 +11,7 @@ class Client(asyncio.Protocol):
     def data_received(self, data):
         self.server_transport.write(data)
 
+
     def connection_lost(self, exc):
         self.server_transport.close()
 
@@ -30,10 +31,18 @@ class ProxyServer(asyncio.Protocol):
     ATYP_IPV6 = 4
 
     @asyncio.coroutine
-    def request(self, address, port, data):
-        protocol, client = yield from asyncio.get_event_loop().create_connection(Client, address, port)
-        client.server_transport = self.transport
-        client.transport.write(data)
+    def request_init(self, address, port):
+        _, self.client = yield from asyncio.get_event_loop().create_connection(Client, address, port)
+        self.client.server_transport = self.transport
+        client_address, client_port = self.client.transport.get_extra_info('peername')
+        client_addr_port = [int(x) for x in client_address.split('.')]
+        client_addr_port.append(client_port)
+        resp = pack(b'bbbbBBBBH', 5, 0, 0, self.ATYP_IPV4, *client_addr_port)
+        self.transport.write(resp)
+
+    @asyncio.coroutine
+    def request(self, data):
+        self.client.transport.write(data)
 
     def connection_made(self, transport):
         self.stage = self.STAGE_HELLO
@@ -53,20 +62,22 @@ class ProxyServer(asyncio.Protocol):
             self.port = unpack(b'!H', data[-2:])[0]
             if atyp == self.ATYP_IPV4:
                 self.address = '.'.join([str(x) for x in unpack(b'BBBB', data[4:8])])
-                resp = pack(b'bbbbBBBBH', 5, 0, 0, self.ATYP_IPV4, 127, 0, 0, 1, 8080)
                 self.stage = self.STAGE_WORK
-                self.transport.write(resp)
+                asyncio.async(self.request_init(self.address, self.port))
             elif atyp == self.ATYP_IPV6:
+                # not implemented yet
                 resp = pack(b'bbbbBBBBH', 5, 8, 0, self.ATYP_IPV4, 127, 0, 0, 1, 8080)
                 self.transport.write(resp)
                 self.transport.close()
             elif atyp == self.ATYP_DOMAIN:
+                # not implemented yet
                 resp = pack(b'bbbbBBBBH', 5, 8, 0, self.ATYP_IPV4, 127, 0, 0, 1, 8080)
                 self.transport.write(resp)
                 self.transport.close()
         else:
-            print(self.address, self.port)
-            asyncio.Task(self.request(self.address, self.port, data))
+            print('work')
+            asyncio.async(self.request(data))
+
 
 
 if __name__ == '__main__':
