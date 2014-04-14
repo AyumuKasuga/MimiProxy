@@ -98,8 +98,7 @@ class ProxyServer(asyncio.Protocol):
             asyncio.async(self.request(data))
 
 
-
-if __name__ == '__main__':
+def run():
     if len(sys.argv) != 3:
         sys.exit(u'use mimiproxy address port [example: mimiproxy 0.0.0.0 1080]')
     loop = asyncio.get_event_loop()
@@ -113,3 +112,6 @@ if __name__ == '__main__':
     finally:
         server.close()
         loop.close()
+
+if __name__ == '__main__':
+    run()
