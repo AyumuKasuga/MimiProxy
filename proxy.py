@@ -1,3 +1,4 @@
+import sys
 import asyncio
 from struct import unpack, pack
 
@@ -99,9 +100,11 @@ class ProxyServer(asyncio.Protocol):
 
 
 if __name__ == '__main__':
+    if len(sys.argv) != 3:
+        sys.exit(u'use mimiproxy address port [example: mimiproxy 0.0.0.0 1080]')
     loop = asyncio.get_event_loop()
     loop.set_debug(True)
-    coro = loop.create_server(ProxyServer, '127.0.0.1', 8080)
+    coro = loop.create_server(ProxyServer, sys.argv[1], sys.argv[2])
     server = loop.run_until_complete(coro)
     try:
         loop.run_forever()
