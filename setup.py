@@ -8,8 +8,6 @@ else:
     print("Sorry, this version requires python 3.3 or higher")
     sys.exit()
 
-readme = open('README.md').read()
-
 requires = ['asyncio',]
 
 setup(
@@ -17,7 +15,6 @@ setup(
     packages=['MimiProxy'],
     version='0.0.1-alpha',
     description='Small SOCKS5 proxy server on python3',
-    # long_description=readme,
     author='Andrey Kostakov',
     author_email='bps@dzen.ws',
     url='https://github.com/AyumuKasuga/MimiProxy',
