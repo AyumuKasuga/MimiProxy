@@ -14,8 +14,8 @@ else:
 setup(
     name='MimiProxy',
     packages=['MimiProxy'],
-    version='0.0.4-experimental',
-    description='Small SOCKS5 proxy server on python3',
+    version='0.0.5',
+    description='Small SOCKS5 proxy server on python3 and asyncio',
     author='Andrey Kostakov',
     author_email='bps@dzen.ws',
     url='https://github.com/AyumuKasuga/MimiProxy',
